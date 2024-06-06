@@ -56,7 +56,7 @@ struct Node
 
     void toggleColor()
     {
-        std::cout << "togglecalled\n";
+        // std::cout << "togglecalled\n";
         selected = !selected;
         if (selected)
         {
@@ -82,6 +82,11 @@ int main()
     std::vector<Node> nodes;
     std::vector<Edge> edges;
     std::vector<int> selectedNodes;
+
+    sf::RectangleShape panel(sf::Vector2f(190, 600));
+    panel.setFillColor(sf::Color(50, 50, 50));
+    panel.setPosition(610, 0);
+
     while (window.isOpen())
     {
         sf::Event event;
@@ -119,7 +124,7 @@ int main()
                     {
                         nodes.emplace_back(x, y, font, std::to_string(nodes.size() + 1));
                     }
-                    std::cout << selectedNodes.size() << "\n";
+                    // std::cout << selectedNodes.size() << "\n";
                     if (selectedNodes.size() == 2)
                     {
 
@@ -154,6 +159,7 @@ int main()
             window.draw(node.shape);
             window.draw(node.label);
         }
+        window.draw(panel);
         window.display();
     }
 
