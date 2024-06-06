@@ -137,8 +137,8 @@ struct Node
     sf::CircleShape shape;
     sf::Text label;
     float x, y;
-    bool selected;
-    Node(float x, float y, const sf::Font &font, const std::string &labelText) : x(x), y(y), selected(false)
+    bool color;
+    Node(float x, float y, const sf::Font &font, const std::string &labelText) : x(x), y(y), color(0)
     {
         shape.setRadius(25.0f);
         shape.setFillColor(sf::Color::Yellow);
@@ -160,13 +160,16 @@ struct Node
         return dx * dx + dy * dy <= shape.getRadius() * shape.getRadius();
     }
 
-    void toggleColor()
+    void toggleColor(int c)
     {
         // std::cout << "togglecalled\n";
-        selected = !selected;
-        if (selected)
+        if (c == 1)
         {
             shape.setFillColor(sf::Color::Green);
+        }
+        else if (c == 2)
+        {
+            shape.setFillColor(sf::Color::Blue);
         }
         else
         {
@@ -178,14 +181,14 @@ class Array
 {
 private:
     std::vector<sf::RectangleShape> blocks;
-    std::vector<sf::Text> texts;
-    const float blockWidth = 50.0f;
-    const float blockHeight = 50.0f;
-    const float spacing = 10.0f;
-    const float x = 50.0f;
-    const float y = 50.0f;
+    float blockWidth = 50.0f;
+    float blockHeight = 50.0f;
+    float spacing = 10.0f;
+    float x = 50.0f;
+    float y = 50.0f;
 
 public:
+    std::vector<sf::Text> texts;
     Array(std::vector<int> &arr, const sf::Font &font)
     {
         int si = arr.size();
@@ -223,27 +226,71 @@ public:
             window.draw(texts[i]);
         }
     }
+    void toggleColor(int i, int c)
+    {
+        if (c == 1)
+        {
+            blocks[i].setFillColor(sf::Color::Red);
+        }
+        else
+        {
+            blocks[i].setFillColor(sf::Color::White);
+        }
+    }
+    void changeValue(int i, int c)
+    {
+        texts[i].setString(std::to_string(c));
+    }
 };
 class Graph
 {
 public:
-    std::vector<int> adj[100];
+    std::vector<std::pair<int, int>> adj[100];
     std::vector<Node> *nodes;
     std::vector<int> dist;
     Graph(std::vector<Node> &nodes)
     {
         this->nodes = &nodes;
-        std::vector<int> temp(5, INT_MAX);
-        dist = temp;
     }
-    void test(sf::RenderWindow &window, std::function<void()> &fullRender)
+    void dijkstra(int src, sf::RenderWindow &window, std::function<void()> &fullRender, Array &distArray)
     {
-        for (auto &node : (*nodes))
+        int n = dist.size();
+        src--;
+        std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, std::greater<std::pair<int, int>>> pq;
+        (*nodes)[src].toggleColor(2);
+        distArray.changeValue(src, 0);
+        distArray.toggleColor(src, 1);
+        fullRender();
+        sf::sleep(sf::seconds(2));
+        (*nodes)[src].toggleColor(0);
+        distArray.toggleColor(src, 0);
+        pq.push({src, 0});
+        while (!pq.empty())
         {
-            node.toggleColor();
+            std::pair<int, int> x = pq.top();
+            pq.pop();
+            int s = x.second;
+            int dists = x.first;
+            if (dists > dist[s])
+                continue;
+            (*nodes)[s].toggleColor(1);
             fullRender();
-            sf::sleep(sf::seconds(1));
-            node.toggleColor();
+            sf::sleep(sf::seconds(2));
+            for (auto &u : adj[s])
+            {
+                if (dist[u.first] > dists + u.second)
+                {
+                    (*nodes)[u.first].toggleColor(2);
+                    distArray.toggleColor(u.first, 1);
+                    dist[u.first] = dists + u.second;
+                    distArray.changeValue(u.first, dist[u.first]);
+                    fullRender();
+                    pq.push({dist[u.first], u.first});
+                    sf::sleep(sf::seconds(2));
+                    distArray.toggleColor(u.first, 0);
+                    (*nodes)[u.first].toggleColor(0);
+                }
+            }
         }
     }
 };
@@ -302,16 +349,17 @@ int main()
     Label SrcLabel(18, panel_start + 10, 140, font);
     SrcLabel.text.setString("Source");
 
-    TextBox inputBoxDest(panel_start + 10, 250, 160, 30, font);
-    bool waitingForDest = false;
-    Label DestLabel(18, panel_start + 10, 220, font);
-    DestLabel.text.setString("Destination");
+    // TextBox inputBoxDest(panel_start + 10, 250, 160, 30, font);
+    // bool waitingForDest = false;
+    // Label DestLabel(18, panel_start + 10, 220, font);
+    // DestLabel.text.setString("Destination");
 
     Graph graph(nodes);
 
     Array distArray(graph.dist, font);
 
     bool run = false;
+    int src = 1, dest = 0;
 
     Button button(panel_start + 10, 300, 160, 30, font);
 
@@ -337,8 +385,8 @@ int main()
                         {
                             if (nodes[i].contains(x, y))
                             {
-                                nodes[i].toggleColor();
-                                if (nodes[i].selected)
+                                nodes[i].toggleColor(1);
+                                if (nodes[i].color == 0)
                                 {
                                     selectedNodes.push_back(i);
                                 }
@@ -354,10 +402,12 @@ int main()
                         if (!nodeClicked)
                         {
                             nodes.emplace_back(x, y, font, std::to_string(nodes.size() + 1));
+                            graph.dist.push_back(INT_MAX);
                         }
                         // std::cout << selectedNodes.size() << "\n";
                         if (selectedNodes.size() == 2)
                         {
+                            // std::cout << "this working\n";
                             waitingForWeight = true;
                             inputBoxWeight.setSelected(true);
                         }
@@ -368,6 +418,17 @@ int main()
                             inputBoxWeight.setSelected(true);
                         else
                             inputBoxWeight.setSelected(false);
+                        if (inputBoxSrc.contains(x, y))
+                        {
+                            inputBoxSrc.setSelected(true);
+                            waitingForSrc = true;
+                        }
+                        else
+                            inputBoxSrc.setSelected(false);
+                        // if (inputBoxDest.contains(x, y))
+                        //     inputBoxDest.setSelected(true);
+                        // else
+                        //     inputBoxDest.setSelected(false);
                         if (button.box.getGlobalBounds().contains(x, y))
                         {
                             run = true;
@@ -377,7 +438,10 @@ int main()
             }
             if (inputBoxWeight.isSelected)
                 inputBoxWeight.handleInput(event);
-
+            if (inputBoxSrc.isSelected)
+                inputBoxSrc.handleInput(event);
+            // if (inputBoxDest.isSelected)
+            //     inputBoxDest.handleInput(event);
             if (!waitingForWeight)
                 weightLabel.text.setString("Select two nodes to create an\nedge.");
             else
@@ -392,26 +456,40 @@ int main()
 
             if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter)
             {
-                std::stringstream ss(inputBoxWeight.getInput());
                 if (waitingForWeight)
                 {
+                    // std::cout << "working" << "\n";
+                    std::stringstream ss(inputBoxWeight.getInput());
                     int weight;
                     ss >> weight;
                     int startNodeIndex = selectedNodes[0];
                     int endNodeIndex = selectedNodes[1];
-
+                    graph.adj[startNodeIndex].push_back({endNodeIndex, weight});
                     edges.emplace_back(startNodeIndex, endNodeIndex, weight, font,
                                        nodes[startNodeIndex].x, nodes[startNodeIndex].y,
                                        nodes[endNodeIndex].x, nodes[endNodeIndex].y);
 
-                    nodes[startNodeIndex].toggleColor();
-                    nodes[endNodeIndex].toggleColor();
+                    nodes[startNodeIndex].toggleColor(0);
+                    nodes[endNodeIndex].toggleColor(0);
                     selectedNodes.clear();
 
                     waitingForWeight = false;
                     inputBoxWeight.clear();
                     inputBoxWeight.setSelected(false);
                 }
+                if (waitingForSrc)
+                {
+                    std::stringstream ss(inputBoxSrc.getInput());
+                    ss >> src;
+                    waitingForSrc = false;
+                    inputBoxSrc.clear();
+                    inputBoxSrc.setSelected(false);
+                }
+                // if (waitingForDest)
+                // {
+                //     std::stringstream ss(inputBoxDest.getInput());
+                //     ss >> dest;
+                // }
             }
         }
         std::function<void()> fullRender = [&]()
@@ -432,8 +510,8 @@ int main()
             inputBoxWeight.render(window);
             window.draw(SrcLabel.text);
             inputBoxSrc.render(window);
-            window.draw(DestLabel.text);
-            inputBoxDest.render(window);
+            // window.draw(DestLabel.text);
+            // inputBoxDest.render(window);
 
             window.draw(button.box);
             window.draw(button.text);
@@ -443,7 +521,9 @@ int main()
 
         if (run)
         {
-            graph.test(window, fullRender);
+            Array temp(graph.dist, font);
+            distArray = temp;
+            graph.dijkstra(src, window, fullRender, distArray);
             run = false;
         }
         else
