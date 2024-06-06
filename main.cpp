@@ -1,4 +1,5 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/System.hpp>
 #include <vector>
 #include <string>
 #include <bits/stdc++.h>
@@ -223,6 +224,29 @@ public:
         }
     }
 };
+class Graph
+{
+private:
+    std::vector<Node> temp;
+
+public:
+    std::vector<int> adj[100];
+    std::vector<Node> *nodes;
+    Graph(std::vector<Node> &nodes)
+    {
+        this->nodes = &nodes;
+    }
+    void test(sf::RenderWindow &window, std::function<void()> &fullRender)
+    {
+        for (auto &node : (*nodes))
+        {
+            node.toggleColor();
+            fullRender();
+            sf::sleep(sf::seconds(1));
+            node.toggleColor();
+        }
+    }
+};
 int main()
 {
     int window_width = 1440, window_height = 900;
@@ -252,6 +276,9 @@ int main()
 
     std::vector<int> dist(5, INT_MAX);
     Array distArray(dist, font);
+
+    Graph graph(nodes);
+    bool test = true;
 
     while (window.isOpen())
     {
@@ -348,23 +375,33 @@ int main()
                 }
             }
         }
+        std::function<void()> fullRender = [&]()
+        {
+            window.clear();
+            for (const auto &edge : edges)
+            {
+                window.draw(edge.line);
+                window.draw(edge.label);
+            }
+            for (const auto &node : nodes)
+            {
+                window.draw(node.shape);
+                window.draw(node.label);
+            }
+            window.draw(panel);
+            window.draw(weightLabel.text);
+            inputBoxWeight.render(window);
+            distArray.render(window);
+            window.display();
+        };
 
-        window.clear();
-        for (const auto &edge : edges)
+        if (nodes.size() > 5 && test)
         {
-            window.draw(edge.line);
-            window.draw(edge.label);
+            graph.test(window, fullRender);
+            test = false;
         }
-        for (const auto &node : nodes)
-        {
-            window.draw(node.shape);
-            window.draw(node.label);
-        }
-        window.draw(panel);
-        window.draw(weightLabel.text);
-        inputBoxWeight.render(window);
-        distArray.render(window);
-        window.display();
+        else
+            fullRender();
     }
 
     return 0;
