@@ -95,7 +95,18 @@ public:
         }
     }
 };
-
+class Label
+{
+public:
+    sf::Text text;
+    Label(int charsize, float x, float y, sf::Font &font)
+    {
+        text.setFont(font);
+        text.setCharacterSize(charsize);
+        text.setFillColor(sf::Color::White);
+        text.setPosition(x, y);
+    }
+};
 struct Edge
 {
     int startNodeIndex;
@@ -162,10 +173,59 @@ struct Node
         }
     }
 };
+class Array
+{
+private:
+    std::vector<sf::RectangleShape> blocks;
+    std::vector<sf::Text> texts;
+    const float blockWidth = 50.0f;
+    const float blockHeight = 50.0f;
+    const float spacing = 10.0f;
+    const float x = 50.0f;
+    const float y = 50.0f;
 
+public:
+    Array(std::vector<int> &arr, const sf::Font &font)
+    {
+        int si = arr.size();
+        for (int i = 0; i < si; i++)
+        {
+            sf::RectangleShape block(sf::Vector2f(blockWidth, blockHeight));
+            block.setFillColor(sf::Color::White);
+            block.setOutlineThickness(1.0f);
+            block.setOutlineColor(sf::Color::Black);
+            block.setPosition(x + i * (blockWidth + spacing), y); // Position the block in a row
+
+            sf::Text text;
+            text.setFont(font);
+            if (arr[i] == INT_MAX)
+                text.setString("MAX");
+            else
+                text.setString(std::to_string(arr[i]));
+            text.setCharacterSize(20);
+            text.setFillColor(sf::Color::Black);
+
+            sf::FloatRect textBounds = text.getLocalBounds();
+            text.setOrigin(textBounds.left + textBounds.width / 2.0f, textBounds.top + textBounds.height / 2.0f);
+            text.setPosition(block.getPosition().x + blockWidth / 2.0f, block.getPosition().y + blockHeight / 2.0f);
+
+            blocks.push_back(block);
+            texts.push_back(text);
+        }
+    }
+
+    void render(sf::RenderWindow &window)
+    {
+        for (size_t i = 0; i < blocks.size(); i++)
+        {
+            window.draw(blocks[i]);
+            window.draw(texts[i]);
+        }
+    }
+};
 int main()
 {
-    int window_width = 800, window_height = 600;
+    int window_width = 1440, window_height = 900;
     sf::RenderWindow window(sf::VideoMode(window_width, window_height), "Graph Visualizer");
 
     sf::Font font;
@@ -178,21 +238,20 @@ int main()
     std::vector<Edge> edges;
     std::vector<int> selectedNodes;
 
-    int panel_width = 190;
+    int panel_width = 300;
     int panel_start = window_width - panel_width;
     sf::RectangleShape panel(sf::Vector2f(panel_width, window_height));
     panel.setFillColor(sf::Color(50, 50, 50));
     panel.setPosition(panel_start, 0);
 
-    TextBox inputBoxWeight(panel_start + 10, 50, 160, 30, font);
+    TextBox inputBoxWeight(panel_start + 10, 80, 160, 30, font);
 
     bool waitingForWeight = false;
 
-    sf::Text inputLabelWeight;
-    inputLabelWeight.setFont(font);
-    inputLabelWeight.setCharacterSize(14);
-    inputLabelWeight.setFillColor(sf::Color::White);
-    inputLabelWeight.setPosition(panel_start + 10, 20);
+    Label weightLabel(18, panel_start + 10, 20, font);
+
+    std::vector<int> dist(5, INT_MAX);
+    Array distArray(dist, font);
 
     while (window.isOpen())
     {
@@ -254,15 +313,15 @@ int main()
                 inputBoxWeight.handleInput(event);
 
             if (!waitingForWeight)
-                inputLabelWeight.setString("Select two nodes to\ncreate an edge.");
+                weightLabel.text.setString("Select two nodes to create an\nedge.");
             else
             {
                 int startNodeIndex = selectedNodes[0];
                 int endNodeIndex = selectedNodes[1];
 
-                std::string x = "Enter weight for the\nedge between node " + std::to_string(startNodeIndex + 1) +
+                std::string x = "Enter weight for the edge\nbetween node " + std::to_string(startNodeIndex + 1) +
                                 " and node " + std::to_string(endNodeIndex + 1) + ": ";
-                inputLabelWeight.setString(x);
+                weightLabel.text.setString(x);
             }
 
             if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter)
@@ -302,8 +361,9 @@ int main()
             window.draw(node.label);
         }
         window.draw(panel);
-        window.draw(inputLabelWeight);
+        window.draw(weightLabel.text);
         inputBoxWeight.render(window);
+        distArray.render(window);
         window.display();
     }
 
