@@ -232,6 +232,10 @@ public:
         {
             blocks[i].setFillColor(sf::Color::Red);
         }
+        else if (c == 2)
+        {
+            blocks[i].setFillColor(sf::Color::Green);
+        }
         else
         {
             blocks[i].setFillColor(sf::Color::White);
@@ -265,6 +269,7 @@ public:
         (*nodes)[src].toggleColor(0);
         distArray.toggleColor(src, 0);
         pq.push({src, 0});
+        dist[src] = 0;
         while (!pq.empty())
         {
             std::pair<int, int> x = pq.top();
@@ -274,6 +279,7 @@ public:
             if (dists > dist[s])
                 continue;
             (*nodes)[s].toggleColor(1);
+            distArray.toggleColor(s, 2);
             fullRender();
             sf::sleep(sf::seconds(2));
             for (auto &u : adj[s])
