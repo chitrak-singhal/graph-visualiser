@@ -186,6 +186,14 @@ int main()
 
     TextBox inputBoxWeight(panel_start + 10, 50, 160, 30, font);
 
+    bool waitingForWeight = false;
+
+    sf::Text inputLabelWeight;
+    inputLabelWeight.setFont(font);
+    inputLabelWeight.setCharacterSize(14);
+    inputLabelWeight.setFillColor(sf::Color::White);
+    inputLabelWeight.setPosition(panel_start + 10, 20);
+
     while (window.isOpen())
     {
         sf::Event event;
@@ -229,22 +237,8 @@ int main()
                         // std::cout << selectedNodes.size() << "\n";
                         if (selectedNodes.size() == 2)
                         {
-
-                            int startNodeIndex = selectedNodes[0];
-                            int endNodeIndex = selectedNodes[1];
-
-                            std::cout << "Enter weight for the edge between node " << startNodeIndex + 1
-                                      << " and node " << endNodeIndex + 1 << ": ";
-                            int weight;
-                            std::cin >> weight;
-
-                            edges.emplace_back(startNodeIndex, endNodeIndex, weight, font,
-                                               nodes[startNodeIndex].x, nodes[startNodeIndex].y,
-                                               nodes[endNodeIndex].x, nodes[endNodeIndex].y);
-
-                            nodes[startNodeIndex].toggleColor();
-                            nodes[endNodeIndex].toggleColor();
-                            selectedNodes.clear();
+                            waitingForWeight = true;
+                            inputBoxWeight.setSelected(true);
                         }
                     }
                     else
@@ -258,6 +252,42 @@ int main()
             }
             if (inputBoxWeight.isSelected)
                 inputBoxWeight.handleInput(event);
+
+            if (!waitingForWeight)
+                inputLabelWeight.setString("Select two nodes to\ncreate an edge.");
+            else
+            {
+                int startNodeIndex = selectedNodes[0];
+                int endNodeIndex = selectedNodes[1];
+
+                std::string x = "Enter weight for the\nedge between node " + std::to_string(startNodeIndex + 1) +
+                                " and node " + std::to_string(endNodeIndex + 1) + ": ";
+                inputLabelWeight.setString(x);
+            }
+
+            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter)
+            {
+                std::stringstream ss(inputBoxWeight.getInput());
+                if (waitingForWeight)
+                {
+                    int weight;
+                    ss >> weight;
+                    int startNodeIndex = selectedNodes[0];
+                    int endNodeIndex = selectedNodes[1];
+
+                    edges.emplace_back(startNodeIndex, endNodeIndex, weight, font,
+                                       nodes[startNodeIndex].x, nodes[startNodeIndex].y,
+                                       nodes[endNodeIndex].x, nodes[endNodeIndex].y);
+
+                    nodes[startNodeIndex].toggleColor();
+                    nodes[endNodeIndex].toggleColor();
+                    selectedNodes.clear();
+
+                    waitingForWeight = false;
+                    inputBoxWeight.clear();
+                    inputBoxWeight.setSelected(false);
+                }
+            }
         }
 
         window.clear();
@@ -272,6 +302,7 @@ int main()
             window.draw(node.label);
         }
         window.draw(panel);
+        window.draw(inputLabelWeight);
         inputBoxWeight.render(window);
         window.display();
     }
