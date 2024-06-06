@@ -21,9 +21,9 @@ struct Edge
 
         label.setFont(font);
         label.setString(std::to_string(weight));
-        label.setCharacterSize(12);
+        label.setCharacterSize(24);
         label.setFillColor(sf::Color::White);
-        label.setPosition((startX + endX) / 2, (startY + endY) / 2);
+        label.setPosition((startX + endX) / 2 + 0.1, (startY + endY) / 2 + 0.1);
     }
 };
 struct Node
