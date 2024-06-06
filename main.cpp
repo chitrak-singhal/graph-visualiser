@@ -7,10 +7,13 @@ class TextBox
 {
 private:
     sf::RectangleShape box;
-    bool isSelected;
     sf::RectangleShape cursor;
+    sf::Text text;
+    std::string input;
 
 public:
+    bool isSelected;
+
     TextBox(float x, float y, float width, float height, const sf::Font &font)
         : isSelected(false)
     {
@@ -21,11 +24,17 @@ public:
         cursor.setSize(sf::Vector2f(2, height - 10));
         cursor.setFillColor(sf::Color::Black);
         cursor.setPosition(x + 5, y + 5);
+
+        text.setFont(font);
+        text.setFillColor(sf::Color::Black);
+        text.setCharacterSize(14);
+        text.setPosition(x + 5, y + 5);
     }
 
     void render(sf::RenderWindow &window)
     {
         window.draw(box);
+        window.draw(text);
         if (isSelected)
         {
             window.draw(cursor);
@@ -44,6 +53,46 @@ public:
             cursor.setFillColor(sf::Color::Transparent);
         else
             cursor.setFillColor(sf::Color::Black);
+    }
+
+    std::string getInput()
+    {
+        return input;
+    }
+
+    void clear()
+    {
+        input.clear();
+        text.setString(input);
+        resetCursor();
+    }
+
+    void resetCursor()
+    {
+        cursor.setPosition(box.getPosition().x + text.getGlobalBounds().width + 5, box.getPosition().y + 5);
+    }
+
+    void handleInput(sf::Event &event)
+    {
+        if (event.type == sf::Event::TextEntered)
+        {
+            if (isSelected)
+            {
+                if (event.text.unicode == 8)
+                {
+                    if (!input.empty())
+                    {
+                        input.pop_back();
+                    }
+                }
+                else if (event.text.unicode >= 32 && event.text.unicode <= 126)
+                {
+                    input += static_cast<char>(event.text.unicode);
+                }
+                text.setString(input);
+                resetCursor();
+            }
+        }
     }
 };
 
@@ -207,6 +256,8 @@ int main()
                     }
                 }
             }
+            if (inputBoxWeight.isSelected)
+                inputBoxWeight.handleInput(event);
         }
 
         window.clear();
