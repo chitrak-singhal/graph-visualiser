@@ -226,15 +226,15 @@ public:
 };
 class Graph
 {
-private:
-    std::vector<Node> temp;
-
 public:
     std::vector<int> adj[100];
     std::vector<Node> *nodes;
+    std::vector<int> dist;
     Graph(std::vector<Node> &nodes)
     {
         this->nodes = &nodes;
+        std::vector<int> temp(5, INT_MAX);
+        dist = temp;
     }
     void test(sf::RenderWindow &window, std::function<void()> &fullRender)
     {
@@ -247,6 +247,31 @@ public:
         }
     }
 };
+class Button
+{
+public:
+    sf::RectangleShape box;
+    sf::Text text;
+    Button(float x, float y, int width, int height, sf::Font &font)
+    {
+        box.setSize(sf::Vector2f(width, height));
+        box.setPosition(x, y);
+        box.setFillColor(sf::Color::Green);
+        box.setOutlineThickness(2.0f);
+        box.setOutlineColor(sf::Color::Black);
+
+        text.setFont(font);
+        text.setString("Run!");
+        text.setCharacterSize(20);
+        text.setFillColor(sf::Color::Black);
+
+        sf::FloatRect textBounds = text.getLocalBounds();
+        text.setOrigin(textBounds.left + textBounds.width / 2.0f, textBounds.top + textBounds.height / 2.0f);
+
+        text.setPosition(x + width / 2.0, y + height / 2.0);
+    }
+};
+
 int main()
 {
     int window_width = 1440, window_height = 900;
@@ -269,16 +294,26 @@ int main()
     panel.setPosition(panel_start, 0);
 
     TextBox inputBoxWeight(panel_start + 10, 80, 160, 30, font);
-
     bool waitingForWeight = false;
-
     Label weightLabel(18, panel_start + 10, 20, font);
 
-    std::vector<int> dist(5, INT_MAX);
-    Array distArray(dist, font);
+    TextBox inputBoxSrc(panel_start + 10, 170, 160, 30, font);
+    bool waitingForSrc = false;
+    Label SrcLabel(18, panel_start + 10, 140, font);
+    SrcLabel.text.setString("Source");
+
+    TextBox inputBoxDest(panel_start + 10, 250, 160, 30, font);
+    bool waitingForDest = false;
+    Label DestLabel(18, panel_start + 10, 220, font);
+    DestLabel.text.setString("Destination");
 
     Graph graph(nodes);
-    bool test = true;
+
+    Array distArray(graph.dist, font);
+
+    bool run = false;
+
+    Button button(panel_start + 10, 300, 160, 30, font);
 
     while (window.isOpen())
     {
@@ -333,6 +368,10 @@ int main()
                             inputBoxWeight.setSelected(true);
                         else
                             inputBoxWeight.setSelected(false);
+                        if (button.box.getGlobalBounds().contains(x, y))
+                        {
+                            run = true;
+                        }
                     }
                 }
             }
@@ -391,14 +430,21 @@ int main()
             window.draw(panel);
             window.draw(weightLabel.text);
             inputBoxWeight.render(window);
+            window.draw(SrcLabel.text);
+            inputBoxSrc.render(window);
+            window.draw(DestLabel.text);
+            inputBoxDest.render(window);
+
+            window.draw(button.box);
+            window.draw(button.text);
             distArray.render(window);
             window.display();
         };
 
-        if (nodes.size() > 5 && test)
+        if (run)
         {
             graph.test(window, fullRender);
-            test = false;
+            run = false;
         }
         else
             fullRender();
