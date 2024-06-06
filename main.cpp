@@ -2,6 +2,51 @@
 #include <vector>
 #include <string>
 #include <bits/stdc++.h>
+
+class TextBox
+{
+private:
+    sf::RectangleShape box;
+    bool isSelected;
+    sf::RectangleShape cursor;
+
+public:
+    TextBox(float x, float y, float width, float height, const sf::Font &font)
+        : isSelected(false)
+    {
+        box.setPosition(x, y);
+        box.setSize(sf::Vector2f(width, height));
+        box.setFillColor(sf::Color::White);
+
+        cursor.setSize(sf::Vector2f(2, height - 10));
+        cursor.setFillColor(sf::Color::Black);
+        cursor.setPosition(x + 5, y + 5);
+    }
+
+    void render(sf::RenderWindow &window)
+    {
+        window.draw(box);
+        if (isSelected)
+        {
+            window.draw(cursor);
+        }
+    }
+
+    bool contains(float x, float y)
+    {
+        return box.getGlobalBounds().contains(x, y);
+    }
+
+    void setSelected(bool selected)
+    {
+        isSelected = selected;
+        if (!isSelected)
+            cursor.setFillColor(sf::Color::Transparent);
+        else
+            cursor.setFillColor(sf::Color::Black);
+    }
+};
+
 struct Edge
 {
     int startNodeIndex;
@@ -71,7 +116,8 @@ struct Node
 
 int main()
 {
-    sf::RenderWindow window(sf::VideoMode(800, 600), "Graph Visualizer");
+    int window_width = 800, window_height = 600;
+    sf::RenderWindow window(sf::VideoMode(window_width, window_height), "Graph Visualizer");
 
     sf::Font font;
     if (!font.loadFromFile("arial.ttf"))
@@ -83,9 +129,13 @@ int main()
     std::vector<Edge> edges;
     std::vector<int> selectedNodes;
 
-    sf::RectangleShape panel(sf::Vector2f(190, 600));
+    int panel_width = 190;
+    int panel_start = window_width - panel_width;
+    sf::RectangleShape panel(sf::Vector2f(panel_width, window_height));
     panel.setFillColor(sf::Color(50, 50, 50));
-    panel.setPosition(610, 0);
+    panel.setPosition(panel_start, 0);
+
+    TextBox inputBoxWeight(panel_start + 10, 50, 160, 30, font);
 
     while (window.isOpen())
     {
@@ -102,47 +152,58 @@ int main()
                     float x = event.mouseButton.x;
                     float y = event.mouseButton.y;
                     bool nodeClicked = false;
-                    for (size_t i = 0; i < nodes.size(); ++i)
+
+                    if (x < panel_start)
                     {
-                        if (nodes[i].contains(x, y))
+                        for (size_t i = 0; i < nodes.size(); ++i)
                         {
-                            nodes[i].toggleColor();
-                            if (nodes[i].selected)
+                            if (nodes[i].contains(x, y))
                             {
-                                selectedNodes.push_back(i);
+                                nodes[i].toggleColor();
+                                if (nodes[i].selected)
+                                {
+                                    selectedNodes.push_back(i);
+                                }
+                                else
+                                {
+                                    selectedNodes.erase(std::remove(selectedNodes.begin(), selectedNodes.end(), i), selectedNodes.end());
+                                }
+                                nodeClicked = true;
+                                break;
                             }
-                            else
-                            {
-                                selectedNodes.erase(std::remove(selectedNodes.begin(), selectedNodes.end(), i), selectedNodes.end());
-                            }
-                            nodeClicked = true;
-                            break;
+                        }
+
+                        if (!nodeClicked)
+                        {
+                            nodes.emplace_back(x, y, font, std::to_string(nodes.size() + 1));
+                        }
+                        // std::cout << selectedNodes.size() << "\n";
+                        if (selectedNodes.size() == 2)
+                        {
+
+                            int startNodeIndex = selectedNodes[0];
+                            int endNodeIndex = selectedNodes[1];
+
+                            std::cout << "Enter weight for the edge between node " << startNodeIndex + 1
+                                      << " and node " << endNodeIndex + 1 << ": ";
+                            int weight;
+                            std::cin >> weight;
+
+                            edges.emplace_back(startNodeIndex, endNodeIndex, weight, font,
+                                               nodes[startNodeIndex].x, nodes[startNodeIndex].y,
+                                               nodes[endNodeIndex].x, nodes[endNodeIndex].y);
+
+                            nodes[startNodeIndex].toggleColor();
+                            nodes[endNodeIndex].toggleColor();
+                            selectedNodes.clear();
                         }
                     }
-
-                    if (!nodeClicked)
+                    else
                     {
-                        nodes.emplace_back(x, y, font, std::to_string(nodes.size() + 1));
-                    }
-                    // std::cout << selectedNodes.size() << "\n";
-                    if (selectedNodes.size() == 2)
-                    {
-
-                        int startNodeIndex = selectedNodes[0];
-                        int endNodeIndex = selectedNodes[1];
-
-                        std::cout << "Enter weight for the edge between node " << startNodeIndex + 1
-                                  << " and node " << endNodeIndex + 1 << ": ";
-                        int weight;
-                        std::cin >> weight;
-
-                        edges.emplace_back(startNodeIndex, endNodeIndex, weight, font,
-                                           nodes[startNodeIndex].x, nodes[startNodeIndex].y,
-                                           nodes[endNodeIndex].x, nodes[endNodeIndex].y);
-
-                        nodes[startNodeIndex].toggleColor();
-                        nodes[endNodeIndex].toggleColor();
-                        selectedNodes.clear();
+                        if (inputBoxWeight.contains(x, y))
+                            inputBoxWeight.setSelected(true);
+                        else
+                            inputBoxWeight.setSelected(false);
                     }
                 }
             }
@@ -160,6 +221,7 @@ int main()
             window.draw(node.label);
         }
         window.draw(panel);
+        inputBoxWeight.render(window);
         window.display();
     }
 
