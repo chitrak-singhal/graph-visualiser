@@ -166,14 +166,17 @@ struct Node
         if (c == 1)
         {
             shape.setFillColor(sf::Color::Green);
+            label.setFillColor(sf::Color::Black);
         }
         else if (c == 2)
         {
             shape.setFillColor(sf::Color::Blue);
+            label.setFillColor(sf::Color::White);
         }
         else
         {
             shape.setFillColor(sf::Color::Yellow);
+            label.setFillColor(sf::Color::Black);
         }
     }
 };
@@ -185,7 +188,7 @@ private:
     float blockHeight = 50.0f;
     float spacing = 10.0f;
     float x = 50.0f;
-    float y = 50.0f;
+    float y = 60.0f;
 
 public:
     std::vector<sf::Text> texts;
@@ -231,14 +234,17 @@ public:
         if (c == 1)
         {
             blocks[i].setFillColor(sf::Color::Red);
+            texts[i].setFillColor(sf::Color::White);
         }
         else if (c == 2)
         {
             blocks[i].setFillColor(sf::Color::Green);
+            texts[i].setFillColor(sf::Color::Black);
         }
         else
         {
             blocks[i].setFillColor(sf::Color::White);
+            texts[i].setFillColor(sf::Color::Black);
         }
     }
     void changeValue(int i, int c)
@@ -268,7 +274,7 @@ public:
         sf::sleep(sf::seconds(2));
         (*nodes)[src].toggleColor(0);
         distArray.toggleColor(src, 0);
-        pq.push({src, 0});
+        pq.push({0, src});
         dist[src] = 0;
         while (!pq.empty())
         {
@@ -324,6 +330,45 @@ public:
         text.setPosition(x + width / 2.0, y + height / 2.0);
     }
 };
+class Legend
+{
+private:
+    sf::CircleShape shape1;
+    Label label1;
+    sf::CircleShape shape2;
+    Label label2;
+    sf::CircleShape shape3;
+    Label label3;
+
+public:
+    Legend(float x, float y, float gap, sf::Font &font)
+        : label1(18, x + 55.0f, y + 15.0f + 0.6f, font), label2(18, x + 55.0f, y + gap + 3 * 15.0f + 0.6f, font), label3(18, x + 55.0f, y + 2 * gap + 5 * 15.0f + 0.6f, font)
+    {
+        shape1.setRadius(15.0f);
+        shape1.setFillColor(sf::Color::Green);
+        shape1.setPosition(x + shape1.getRadius(), y + shape1.getRadius());
+        label1.text.setString("Visited");
+
+        shape2.setRadius(15.0f);
+        shape2.setFillColor(sf::Color::Yellow);
+        shape2.setPosition(x + shape1.getRadius(), y + gap + 3 * shape1.getRadius());
+        label2.text.setString("Not yet visited");
+
+        shape3.setRadius(15.0f);
+        shape3.setFillColor(sf::Color::Blue);
+        shape3.setPosition(x + shape1.getRadius(), y + 2 * gap + 5 * shape1.getRadius());
+        label3.text.setString("Being pushed to\npriority queue");
+    }
+    void render(sf::RenderWindow &window)
+    {
+        window.draw(shape1);
+        window.draw(label1.text);
+        window.draw(shape2);
+        window.draw(label2.text);
+        window.draw(shape3);
+        window.draw(label3.text);
+    }
+};
 
 int main()
 {
@@ -355,6 +400,10 @@ int main()
     Label SrcLabel(18, panel_start + 10, 140, font);
     SrcLabel.text.setString("Source");
 
+    Legend legend(panel_start + 10, 360, 20, font);
+
+    Label ArrayLabel(18, 50, 20, font);
+    ArrayLabel.text.setString("Distance Array");
     // TextBox inputBoxDest(panel_start + 10, 250, 160, 30, font);
     // bool waitingForDest = false;
     // Label DestLabel(18, panel_start + 10, 220, font);
@@ -522,6 +571,11 @@ int main()
             window.draw(button.box);
             window.draw(button.text);
             distArray.render(window);
+            if (distArray.texts.size())
+            {
+                window.draw(ArrayLabel.text);
+                legend.render(window);
+            }
             window.display();
         };
 
