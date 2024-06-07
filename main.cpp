@@ -115,9 +115,10 @@ struct Edge
     int weight;
     sf::Text label;
     sf::VertexArray line;
+    sf::VertexArray arrowhead;
 
     Edge(int start, int end, float w, const sf::Font &font, float startX, float startY, float endX, float endY)
-        : startNodeIndex(start), endNodeIndex(end), weight(w), line(sf::Lines, 2)
+        : startNodeIndex(start), endNodeIndex(end), weight(w), line(sf::Lines, 2), arrowhead(sf::Triangles, 3)
     {
 
         line[0].position = sf::Vector2f(startX, startY);
@@ -125,11 +126,32 @@ struct Edge
         line[1].position = sf::Vector2f(endX, endY);
         line[1].color = sf::Color::White;
 
+        sf::Vector2f direction = line[1].position - line[0].position;
+        float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+        sf::Vector2f unitDirection = direction / length;
+
+        float arrowheadLength = 10.0f;
+        float arrowheadWidth = 5.0f;
+
+        sf::Vector2f arrowTip = line[1].position - unitDirection * 25.0f;
+        sf::Vector2f arrowBase1 = line[1].position - unitDirection * 25.0f - unitDirection * arrowheadLength +
+                                  sf::Vector2f(-unitDirection.y, unitDirection.x) * arrowheadWidth;
+        sf::Vector2f arrowBase2 = line[1].position - unitDirection * 25.0f - unitDirection * arrowheadLength -
+                                  sf::Vector2f(-unitDirection.y, unitDirection.x) * arrowheadWidth;
+
+        // Add the arrowhead vertices
+        arrowhead[0].position = arrowTip;
+        arrowhead[0].color = sf::Color::White;
+        arrowhead[1].position = arrowBase1;
+        arrowhead[1].color = sf::Color::White;
+        arrowhead[2].position = arrowBase2;
+        arrowhead[2].color = sf::Color::White;
+
         label.setFont(font);
         label.setString(std::to_string(weight));
         label.setCharacterSize(24);
         label.setFillColor(sf::Color::White);
-        label.setPosition((startX + endX) / 2 + 0.1, (startY + endY) / 2 + 0.1);
+        label.setPosition(endX - (endX - startX) / 3 + 0.2, endY - (endY - startY) / 3 + 0.2);
     }
 };
 struct Node
@@ -554,6 +576,7 @@ int main()
             {
                 window.draw(edge.line);
                 window.draw(edge.label);
+                window.draw(edge.arrowhead);
             }
             for (const auto &node : nodes)
             {
